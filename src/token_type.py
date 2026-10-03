@@ -34,6 +34,7 @@ class TokenType(Enum):
     NUMBER = auto()
 
     # Keywords
+    AND = auto()
     LET = auto()
     IF = auto()
     ELSE = auto()
@@ -44,7 +45,7 @@ class TokenType(Enum):
     TRUE = auto()
     FALSE = auto()
     NULL = auto()
+    OR = auto()
     PRINT = auto()
 
     EOF = auto()
-

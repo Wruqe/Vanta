@@ -33,36 +33,45 @@ Python `int` values and decimals become Python `float` values.
 ### String
 
 ```text
-"[^\"]*"
+"([^"\\]|\\["\\nrt])*"
 ```
 
 In this notation, the contents may include newlines. The scanner stores the full
 quoted source as the token's lexeme and the text between the quotes as its literal
 value. Newlines inside a string update the line counter. Backslash escape sequences
-are not interpreted.
+`\"`, `\\`, `\n`, `\r`, and `\t` are interpreted in the literal value. Any other
+escape sequence is reported as a lexical error.
 
 ## Design choices
 
 Vanta reserves these keywords:
 
 ```text
-let fn if else while for return true false null print
+let fn if else while for return true false null print and or
 ```
 
 `true` and `false` carry the Python literal values `True` and `False`; `null` carries
 `None`. Operators are `+`, `-`, `*`, `/`, `!`, `!=`, `=`, `==`, `<`, `<=`, `>`, and
 `>=`. Punctuation is `(`, `)`, `{`, `}`, `,`, `.`, and `;`.
 
+`and` and `or` are reserved as word-based logical operators. They follow Lox's
+logical-expression grammar and avoid adding symbolic `&&` and `||` spellings for
+the same operations.
+
 Spaces, tabs, and carriage returns are ignored. A newline increments the current
 line. `//` starts a comment that continues to the next newline, while a single `/`
-is a division token. Unexpected characters and unterminated strings are collected
-as lexical errors with line numbers. Scanning continues after an unexpected
-character.
+is a division token. Unexpected characters, invalid string escapes, and unterminated
+strings are collected as lexical errors with line numbers. Scanning continues after
+an unexpected character or invalid escape.
 
 The design follows the scanner in *Crafting Interpreters*, but differs from Lox by
-using `let`, `fn`, `null`, and `print` as Vanta keywords, omitting Lox-only keywords,
-and representing whole numbers as Python integers rather than converting every
-number to a floating-point value.
+using `let`, `fn`, `null`, and `print` as Vanta keywords and representing whole
+numbers as Python integers rather than converting every number to a floating-point
+value. Vanta retains Lox's `and` and `or` because they are required for logical
+expressions, but omits the object-oriented `class`, `super`, and `this` keywords;
+the current Vanta grammar defines no class syntax, so reserving those words would
+unnecessarily prevent their use as identifiers. They can be reserved if class
+syntax is added later.
 
 Every produced `Token` contains a token type, the original lexeme, a literal value
 (or `None` when not applicable), and a line number. An EOF token is always appended.
@@ -116,10 +125,12 @@ listed in the results are also exact assertions.
 |---|---|---|---|---|
 | Punctuation | `(){} ,.;` | `LEFT_PAREN RIGHT_PAREN LEFT_BRACE RIGHT_BRACE COMMA DOT SEMICOLON EOF` | Same sequence | Yes |
 | Arithmetic and comparison operators | `+ - * / ! != = == < <= > >=` | `PLUS MINUS STAR SLASH BANG BANG_EQUAL EQUAL EQUAL_EQUAL LESS LESS_EQUAL GREATER GREATER_EQUAL EOF` | Same sequence | Yes |
-| All keywords | `let fn if else while for return true false null print` | `LET FN IF ELSE WHILE FOR RETURN TRUE FALSE NULL PRINT EOF`; literals `True`, `False`, `None` | Same sequence and literals | Yes |
+| All keywords | `let fn if else while for return true false null print and or` | `LET FN IF ELSE WHILE FOR RETURN TRUE FALSE NULL PRINT AND OR EOF`; literals `True`, `False`, `None` | Same sequence and literals | Yes |
 | Identifiers | `alpha _private name2 letdown` | Four `IDENTIFIER` tokens followed by `EOF`; complete lexemes preserved | Same sequence; lexemes `alpha`, `_private`, `name2`, `letdown` | Yes |
 | Integers, decimals, and dot boundary | `10 123 3.14 0.5 1.foo` | `NUMBER NUMBER NUMBER NUMBER NUMBER DOT IDENTIFIER EOF`; literals `10`, `123`, `3.14`, `0.5`, `1` | Same sequence and literals | Yes |
 | Strings and multiline tracking | `"hello world" "line one<newline>line two" next` | `STRING STRING IDENTIFIER EOF`; unquoted string literals; lines `1, 2, 2, 2` | Same sequence, literals, and lines | Yes |
+| String escapes | `"quote: \" slash: \\ newline: \n tab: \t"` | `STRING EOF`; literal contains decoded quote, backslash, newline, and tab characters | Same sequence and literal | Yes |
+| Invalid string escape | `"bad\q" let` | Error `[line 1] Invalid escape sequence '\q'.`; scan continues with `STRING LET EOF` | Same error and tokens | Yes |
 | Comment, whitespace, newline, slash, and EOF | `let // ignored<CR><newline><tab>name / 2` | `LET IDENTIFIER SLASH NUMBER EOF`; lines `1, 2, 2, 2, 2`; empty EOF lexeme | Same sequence, lines, and EOF lexeme | Yes |
 | Unterminated string | `"not closed` | Error `[line 1] Unterminated string.` and `EOF` | Same error tuple and token | Yes |
 | Unexpected character recovery | `@ let` | Error `[line 1] Unexpected character '@'.`; then `LET EOF` | Same error and tokens | Yes |
@@ -132,7 +143,7 @@ listed in the results are also exact assertions.
 Automated suite result:
 
 ```text
-Ran 14 tests in 0.094s
+Ran 16 tests in 0.110s
 
 OK
 ```
@@ -140,12 +151,13 @@ OK
 An additional syntax check also succeeded:
 
 ```bash
-python3 -m py_compile src/token_type.py src/token.py src/scanner.py src/main.py
+python3 -m py_compile src/token_type.py src/vanta_token.py src/scanner.py src/main.py
 ```
 
 ## Known limitations
 
-- Strings do not support escape sequences, so a quote always ends the string.
+- Strings support a deliberately small escape set (`\"`, `\\`, `\n`, `\r`, and
+  `\t`) rather than arbitrary or Unicode escape forms.
 - Identifiers are deliberately ASCII-only, matching the documented grammar.
 - Numbers do not support exponents, leading-dot forms such as `.5`, trailing-dot
   forms such as `1.`, or numeric separators.

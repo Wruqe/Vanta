@@ -10,4 +10,3 @@ class Token:
             f"{self.type.name:<14} "
             f"lexeme={self.lexeme!r} literal={self.literal!r} line={self.line}"
         )
-

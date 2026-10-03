@@ -1,9 +1,9 @@
 try:
     from .token_type import TokenType
-    from .token import Token
+    from .vanta_token import Token
 except ImportError:  # Support running src/main.py directly.
     from token_type import TokenType
-    from token import Token
+    from vanta_token import Token
 
 
 class Scanner:
@@ -110,19 +110,33 @@ class Scanner:
         )
 
     def string(self):
-        # keep going until the other quote
-        while self.peek() != '"' and not self.is_at_end():
-            if self.peek() == "\n":
+        value = []
+
+        while not self.is_at_end():
+            character = self.advance()
+
+            if character == '"':
+                self.add_token(TokenType.STRING, "".join(value))
+                return
+
+            if character == "\n":
                 self.line += 1
-            self.advance()
+                value.append(character)
+                continue
 
-        if self.is_at_end():
-            self.error("Unterminated string.")
-            return
+            if character == "\\" and not self.is_at_end():
+                escaped = self.advance()
+                replacement = ESCAPE_SEQUENCES.get(escaped)
+                if replacement is None:
+                    self.error(f"Invalid escape sequence '\\{escaped}'.")
+                    value.append(escaped)
+                else:
+                    value.append(replacement)
+                continue
 
-        self.advance()
-        value = self.source[self.start + 1:self.current - 1]
-        self.add_token(TokenType.STRING, value)
+            value.append(character)
+
+        self.error("Unterminated string.")
 
     def number(self):
         while self.is_digit(self.peek()):
@@ -173,6 +187,7 @@ class Scanner:
 
 
 KEYWORDS = {
+    "and": TokenType.AND,
     "let": TokenType.LET,
     "fn": TokenType.FN,
     "if": TokenType.IF,
@@ -183,6 +198,7 @@ KEYWORDS = {
     "true": TokenType.TRUE,
     "false": TokenType.FALSE,
     "null": TokenType.NULL,
+    "or": TokenType.OR,
     "print": TokenType.PRINT,
 }
 
@@ -190,4 +206,12 @@ KEYWORD_LITERALS = {
     TokenType.TRUE: True,
     TokenType.FALSE: False,
     TokenType.NULL: None,
+}
+
+ESCAPE_SEQUENCES = {
+    '"': '"',
+    "\\": "\\",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
 }

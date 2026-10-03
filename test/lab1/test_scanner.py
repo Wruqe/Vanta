@@ -60,7 +60,7 @@ class ScannerTests(unittest.TestCase):
 
     def test_every_keyword(self):
         tokens = self.assert_types(
-            "let fn if else while for return true false null print",
+            "let fn if else while for return true false null print and or",
             [
                 TokenType.LET,
                 TokenType.FN,
@@ -73,6 +73,8 @@ class ScannerTests(unittest.TestCase):
                 TokenType.FALSE,
                 TokenType.NULL,
                 TokenType.PRINT,
+                TokenType.AND,
+                TokenType.OR,
                 TokenType.EOF,
             ],
         )
@@ -114,6 +116,22 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual("hello world", tokens[0].literal)
         self.assertEqual("line one\nline two", tokens[1].literal)
         self.assertEqual([1, 2, 2, 2], [token.line for token in tokens])
+
+    def test_string_escape_sequences(self):
+        tokens = self.assert_types(
+            r'"quote: \" slash: \\ newline: \n tab: \t"',
+            [TokenType.STRING, TokenType.EOF],
+        )
+        self.assertEqual('quote: " slash: \\ newline: \n tab: \t', tokens[0].literal)
+
+    def test_invalid_string_escape_is_reported_and_scanning_continues(self):
+        scanner, tokens = self.scan(r'"bad\q" let')
+        self.assertEqual([(1, "Invalid escape sequence '\\q'.")], scanner.errors)
+        self.assertEqual(
+            [TokenType.STRING, TokenType.LET, TokenType.EOF],
+            [token.type for token in tokens],
+        )
+        self.assertEqual("badq", tokens[0].literal)
 
     def test_comments_whitespace_newlines_and_eof(self):
         tokens = self.assert_types(
