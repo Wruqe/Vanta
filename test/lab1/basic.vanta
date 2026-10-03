@@ -1,0 +1,11 @@
+// A small Vanta program that exercises several token categories.
+fn max(a, b) {
+    if (a >= b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+let answer = max(10, 3.14);
+print "answer";

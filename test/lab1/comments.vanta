@@ -1,0 +1,4 @@
+let before = 1; // everything after the slashes is ignored
+
+// This entire line is ignored.
+print before / 2;
