@@ -84,13 +84,13 @@ with Python 3.
 Scan a source file:
 
 ```bash
-python3 src/main.py test/lab1/basic.vanta
+python3 src/main.py --tokens test/lab1/basic.vanta
 ```
 
 Start interactive mode:
 
 ```bash
-python3 src/main.py
+python3 src/main.py --tokens
 ```
 
 The interactive prompt is `Vanta > `. Send EOF (`Ctrl-D` on macOS/Linux) to exit.
@@ -105,10 +105,10 @@ python3 -m unittest discover -s test/lab1 -p 'test_*.py' -v
 Optional individual fixture runs:
 
 ```bash
-python3 src/main.py test/lab1/operators.vanta
-python3 src/main.py test/lab1/literals.vanta
-python3 src/main.py test/lab1/comments.vanta
-python3 src/main.py test/lab1/errors.vanta
+python3 src/main.py --tokens test/lab1/operators.vanta
+python3 src/main.py --tokens test/lab1/literals.vanta
+python3 src/main.py --tokens test/lab1/comments.vanta
+python3 src/main.py --tokens test/lab1/errors.vanta
 ```
 
 A file containing lexical errors exits with status 65. An unreadable file exits
@@ -135,8 +135,8 @@ listed in the results are also exact assertions.
 | Unterminated string | `"not closed` | Error `[line 1] Unterminated string.` and `EOF` | Same error tuple and token | Yes |
 | Unexpected character recovery | `@ let` | Error `[line 1] Unexpected character '@'.`; then `LET EOF` | Same error and tokens | Yes |
 | Larger Vanta program | `test/lab1/basic.vanta` | No errors; begins with `FN`, includes `GREATER_EQUAL` and `STRING`, ends with `EOF` | All assertions satisfied | Yes |
-| Source-file mode | `python3 src/main.py test/lab1/basic.vanta` | Status 0; output contains `FN`, `STRING`, and `EOF`; no stderr | Status 0 with expected output and empty stderr | Yes |
-| Erroneous source-file mode | `python3 src/main.py test/lab1/errors.vanta` | Status 65; both unexpected-character and unterminated-string errors | Status 65 with both errors | Yes |
+| Source-file mode | `python3 src/main.py --tokens test/lab1/basic.vanta` | Status 0; output contains `FN`, `STRING`, and `EOF`; no stderr | Status 0 with expected output and empty stderr | Yes |
+| Erroneous source-file mode | `python3 src/main.py --tokens test/lab1/errors.vanta` | Status 65; both unexpected-character and unterminated-string errors | Status 65 with both errors | Yes |
 | Interactive error recovery | Input `@<newline>let ok = 1;<newline>` | Status 0 at EOF; error reported; next line produces `LET`, `IDENTIFIER`, and another `EOF` | Prompt continued and all expected output appeared | Yes |
 | Invalid CLI arguments | `python3 src/main.py one.vanta two.vanta` | Status 64 and usage text | Status 64 with usage text | Yes |
 
@@ -163,7 +163,7 @@ python3 -m py_compile src/token_type.py src/vanta_token.py src/scanner.py src/ma
   forms such as `1.`, or numeric separators.
 - File input supports multiline strings. The REPL scans each submitted line
   independently, so an interactive string must close on the same submitted line.
-- This lab ends after tokenization. There is intentionally no parser, AST,
-  evaluator, or execution stage.
+- The Lab 1 `--tokens` mode ends after tokenization. The default CLI now continues
+  into the parser added in Lab 3, but it still does not evaluate or execute code.
 
 All documented tests pass; there are no known failing Lab 1 tests.

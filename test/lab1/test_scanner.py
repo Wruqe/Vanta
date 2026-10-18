@@ -164,7 +164,7 @@ class ScannerTests(unittest.TestCase):
 class CommandLineTests(unittest.TestCase):
     def run_main(self, arguments=(), input_text=None):
         return subprocess.run(
-            [sys.executable, "src/main.py", *arguments],
+            [sys.executable, "src/main.py", "--tokens", *arguments],
             cwd=REPOSITORY_ROOT,
             input=input_text,
             text=True,
